@@ -24,7 +24,6 @@
     <table class="table table-borderless table-shopping-cart">
     <thead class="text-muted">
     
-    {% for cart_item in cart_items %}
     <tr class="small text-uppercase">
       <th scope="col">Product</th>
       <th scope="col" width="120">Quantity</th>
@@ -33,6 +32,7 @@
     </tr>
     </thead>
     <tbody>
+         {% for cart_item in cart_items %} 
     <tr>
         <td>
             <figure class="itemside align-items-center">
@@ -107,7 +107,7 @@
                 <p class="text-center mb-3">
                     <img src="{% static './images/misc/payments.png' %}" height="26">
                 </p>
-                <a href="./place-order.html" class="btn btn-primary btn-block"> Checkout </a>
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-block"> Checkout </a>
                 <a href="{% url 'store' %}" class="btn btn-light btn-block">Continue Shopping</a>
             </div> <!-- card-body.// -->
             </div> <!-- card.// -->
@@ -125,4 +125,6 @@
 
 
 
+
 {% endblock %}
+{% include "includes/footer.html" %}

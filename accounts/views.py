@@ -11,6 +11,11 @@ from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
+from carts.models import Cart,CartItem
+
+
+from carts.views import _cart_id
+import requests
 # Create your views here.
 
 def register(request):
@@ -50,7 +55,7 @@ def register(request):
         
     else:
         form = RegistertrationForm()
-        print("ksdlknl")
+        # print("ksdlknl")
             
     
     context = {
@@ -67,9 +72,66 @@ def login(request):
         print(user)
 
         if user is not None:
+            try:
+                cart = Cart.objects.get(cart_id=_cart_id(request))
+                is_cart_item_exists = CartItem.objects.filter(cart = cart).exists()
+                if is_cart_item_exists:
+                    cart_item = CartItem.objects.filter(cart=cart)
+                    
+                    
+                    # Grouping the logouted product with the user
+                    product_variation = []
+                    for item in cart_item:
+                        variaion = item.variations.all()
+                        product_variation.append(list(variaion))
+                    
+                    # Get the cart items from the user to access his product variation
+                    cart_item = CartItem.objects.filter(user=user)
+                    ex_var_list = []
+                    id = []
+                    for item in cart_item:
+                        existing_variation = item.variations.all()
+                        ex_var_list.append(list(existing_variation))
+                        id.append(item.id)
+                        
+                    # product_variation = [1,2,3,4,5]
+                    # ex_variation = [4,5,1,9,8]
+                    
+                    for pr in product_variation:
+                        if pr in ex_var_list:
+                            index = ex_var_list.index(pr)
+                            item_id = id[index]
+                            item = CartItem.objects.get(id=item_id)
+                            item.quantity+=1
+                            item.user = user
+                            item.save()
+                        else:
+                            cart_item = CartItem.objects.filter(cart=cart)
+                            for item in cart_item:
+                                item.user = user
+                                item.save()     
+                
+            except Exception as e:
+                # print(e)
+                pass
+            
+            
             auth.login(request,user)
-            messages.success(request,"You are now  logged in.")
-            return redirect('dashboard')
+            
+            # if login is required for some task then after login it will redirect to that thing
+            url = request.META.get('HTTP_REFERER')
+            try:
+                query = requests.utils.urlparse(url).query
+                # next=/cart/checkout/
+                params = dict(x.split('=') for x in query.split('&'))
+                if 'next' in params:
+                    nextPage = params['next']
+                    return redirect(nextPage)
+             
+            except Exception as e:
+                # print('Error ->',e)  
+                messages.success(request,"You are now  logged in.")
+                return redirect('dashboard')
         
         else:
             messages.error(request,"Invalid login credentials.")
